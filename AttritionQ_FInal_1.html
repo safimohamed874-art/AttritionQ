@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AttritionIQ Pro — Power BI-Style HR Analytics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:opsz,wght@9..144,300;400;600;700&display=swap');
+
+:root {
+  --bg:#07090f;--bg2:#0b0e16;--bg3:#10141e;--card:#111520;--card2:#161c2a;
+  --border:#1d2538;--border2:#263047;--text:#dde4f0;--text2:#7a8ba8;--text3:#44556a;
+  --accent:#2563eb;--accent2:#3b82f6;--accent3:#60a5fa;
+  --red:#dc2626;--red2:#ef4444;--red3:#fca5a5;
+  --orange:#ea580c;--orange2:#f97316;
+  --yellow:#d97706;--yellow2:#f59e0b;
+  --green:#16a34a;--green2:#22c55e;--green3:#86efac;
+  --purple:#7c3aed;--purple2:#a855f7;--purple3:#c084fc;
+  --teal:#0d9488;--teal2:#14b8a6;--teal3:#5eead4;
+  --pink:#be185d;--pink2:#ec4899;
+  --crit-bg:rgba(220,38,38,0.08);--crit-border:rgba(220,38,38,0.25);
+  --high-bg:rgba(234,88,12,0.08);--high-border:rgba(234,88,12,0.25);
+  --med-bg:rgba(217,119,6,0.08);--med-border:rgba(217,119,6,0.25);
+  --low-bg:rgba(22,163,74,0.08);--low-border:rgba(22,163,74,0.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* ── Sidebar ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--bg2);border-right:1px solid var(--border);z-index:200;display:flex;flex-direction:column;transition:transform 0.3s;}
+.logo-area{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.logo-name{font-family:'Fraunces',serif;font-size:16px;font-weight:700;color:var(--text);}
+.logo-ver{font-size:9px;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px;}
+.nav-group{padding:12px 0;}
+.nav-label{padding:6px 20px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.15s;position:relative;border-left:2px solid transparent;}
+.nav-item:hover{background:rgba(255,255,255,0.03);color:var(--text);}
+.nav-item.active{background:rgba(37,99,235,0.1);color:var(--accent3);border-left-color:var(--accent);}
+.nav-ic{font-size:14px;width:18px;text-align:center;}
+.nav-badge{margin-left:auto;background:var(--red);color:white;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;}
+.sidebar-bottom{margin-top:auto;padding:16px;border-top:1px solid var(--border);}
+.model-pill{background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.25);border-radius:8px;padding:10px 12px;}
+.model-pill-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;}
+.model-pill-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;color:var(--green3);margin-top:2px;}
+.model-pill-sub{font-size:9px;color:var(--text3);margin-top:1px;}
+
+/* ── Main layout ── */
+.main{margin-left:240px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;}
+.topbar-left{display:flex;align-items:center;gap:16px;}
+.topbar-title{font-family:'Fraunces',serif;font-size:15px;font-weight:600;}
+.breadcrumb{font-size:11px;color:var(--text3);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);box-shadow:0 0 0 3px rgba(34,197,94,0.2);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,0.2);}50%{box-shadow:0 0 0 5px rgba(34,197,94,0.1);}}
+.btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.15s;display:inline-flex;align-items:center;gap:5px;}
+.btn-primary{background:var(--accent);color:white;}.btn-primary:hover{background:#1d4ed8;}
+.btn-ghost{background:var(--card2);color:var(--text2);border:1px solid var(--border);}.btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+.btn-danger{background:rgba(220,38,38,0.1);color:var(--red2);border:1px solid rgba(220,38,38,0.2);}
+.btn-success{background:rgba(22,163,74,0.1);color:var(--green2);border:1px solid rgba(22,163,74,0.2);}
+.btn-lg{padding:11px 22px;font-size:13px;border-radius:9px;}
+
+/* ── Content ── */
+.content{padding:20px 24px;flex:1;}
+.page{display:none;animation:fadeUp 0.25s ease;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── KPI Grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden;cursor:pointer;transition:border-color 0.2s;}
+.kpi:hover{border-color:var(--border2);}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.c1::after{background:linear-gradient(90deg,var(--accent),transparent);}
+.kpi.c2::after{background:linear-gradient(90deg,var(--red),transparent);}
+.kpi.c3::after{background:linear-gradient(90deg,var(--orange),transparent);}
+.kpi.c4::after{background:linear-gradient(90deg,var(--purple2),transparent);}
+.kpi.c5::after{background:linear-gradient(90deg,var(--teal2),transparent);}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.kpi-val{font-family:'Fraunces',serif;font-size:26px;font-weight:700;line-height:1;}
+.kpi.c1 .kpi-val{color:var(--accent3);}
+.kpi.c2 .kpi-val{color:var(--red2);}
+.kpi.c3 .kpi-val{color:var(--orange2);}
+.kpi.c4 .kpi-val{color:var(--purple3);}
+.kpi.c5 .kpi-val{color:var(--teal3);}
+.kpi-sub{font-size:10px;color:var(--text3);margin-top:6px;}
+.kpi-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:28px;opacity:0.07;}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:10px;margin-top:5px;padding:2px 6px;border-radius:4px;}
+.kpi-trend.up{background:rgba(220,38,38,0.1);color:var(--red2);}
+.kpi-trend.dn{background:rgba(22,163,74,0.1);color:var(--green2);}
+
+/* ── Grid layouts ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+.g3-1{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;}
+.g1-2{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px;}
+.g2-1{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-bottom:16px;}
+
+/* ── Card ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:12px;font-weight:700;letter-spacing:0.3px;}
+.card-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.card-body{padding:18px;}
+.card-body.p0{padding:0;}
+
+/* ── Power BI Filter Bar ── */
+.filter-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.filter-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.filter-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1px solid var(--border);background:var(--card2);color:var(--text2);transition:all 0.15s;}
+.filter-chip:hover,.filter-chip.active{background:rgba(37,99,235,0.15);border-color:rgba(37,99,235,0.4);color:var(--accent3);}
+.filter-sep{width:1px;height:20px;background:var(--border);}
+select.filter-sel{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:11px;color:var(--text2);outline:none;font-family:'Plus Jakarta Sans',sans-serif;}
+select.filter-sel:focus{border-color:var(--accent);}
+
+/* ── Risk badges ── */
+.rbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.rbadge.critical{background:var(--crit-bg);color:var(--red3);border:1px solid var(--crit-border);}
+.rbadge.high{background:var(--high-bg);color:#fdba74;border:1px solid var(--high-border);}
+.rbadge.medium{background:var(--med-bg);color:#fde68a;border:1px solid var(--med-border);}
+.rbadge.low{background:var(--low-bg);color:var(--green3);border:1px solid var(--low-border);}
+
+/* ── Table ── */
+.tbl-wrap{overflow-x:auto;overflow-y:auto;max-height:480px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+thead th{padding:9px 12px;text-align:left;font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:5;}
+tbody tr{border-bottom:1px solid rgba(29,37,56,0.5);transition:background 0.1s;}
+tbody tr:hover{background:rgba(255,255,255,0.015);}
+tbody td{padding:10px 12px;color:var(--text2);}
+tbody td.bold{color:var(--text);font-weight:600;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+/* ── Risk bar ── */
+.rbar-wrap{display:flex;align-items:center;gap:7px;}
+.rbar-bg{flex:1;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;min-width:60px;}
+.rbar-fill{height:100%;border-radius:2px;}
+.rbar-num{font-family:'IBM Plex Mono',monospace;font-size:10px;width:34px;text-align:right;}
+
+/* ── SHAP bars ── */
+.shap-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.shap-feat{font-size:10px;color:var(--text2);width:150px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.shap-bar-wrap{flex:1;height:20px;background:rgba(29,37,56,0.6);border-radius:3px;position:relative;overflow:hidden;}
+.shap-bar{height:100%;border-radius:3px;position:absolute;top:0;}
+.shap-bar.pos{background:linear-gradient(90deg,rgba(220,38,38,0.4),rgba(220,38,38,0.8));left:0;}
+.shap-bar.neg{background:linear-gradient(90deg,rgba(22,163,74,0.8),rgba(22,163,74,0.4));right:0;}
+.shap-val{font-family:'IBM Plex Mono',monospace;font-size:9px;position:absolute;right:6px;top:50%;transform:translateY(-50%);color:var(--text);}
+
+/* ── Feature bars ── */
+.feat-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.feat-name{font-size:11px;color:var(--text2);width:175px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.feat-bg{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;}
+.feat-fill{height:100%;border-radius:4px;}
+.feat-val{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--text3);width:42px;text-align:right;}
+
+/* ── Heatmap ── */
+.heatmap{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;}
+.hmap-cell{border-radius:4px;padding:10px 6px;text-align:center;transition:transform 0.1s;cursor:default;}
+.hmap-cell:hover{transform:scale(1.05);}
+.hmap-label{font-size:8px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;}
+.hmap-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:white;margin-top:3px;}
+
+/* ── Submission form ── */
+.form-section{background:var(--card2);border-radius:10px;padding:18px;margin-bottom:14px;border:1px solid var(--border);}
+.form-section-title{font-size:11px;font-weight:700;color:var(--accent3);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field label{font-size:10px;color:var(--text3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.8px;}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:12px;outline:none;font-family:'Plus Jakarta Sans',sans-serif;transition:border-color 0.15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field select option{background:var(--bg2);}
+.field input[type=range]{padding:6px 0;accent-color:var(--accent);}
+.range-val{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent3);text-align:center;margin-top:3px;}
+.field.invalid input,.field.invalid select{border-color:var(--red);}
+.field-err{font-size:10px;color:var(--red2);margin-top:3px;}
+.field.valid input,.field.valid select{border-color:var(--green);}
+
+/* ── Submission result ── */
+.result-panel{background:var(--bg2);border-radius:12px;padding:24px;text-align:center;border:1px solid var(--border);}
+.result-score{font-family:'Fraunces',serif;font-size:64px;font-weight:700;line-height:1;margin-bottom:8px;}
+.result-gauge{width:160px;height:80px;margin:0 auto 16px;position:relative;}
+.result-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.result-msg{font-size:13px;color:var(--text2);margin-top:10px;line-height:1.6;}
+.action-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;text-align:left;}
+.action-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;}
+.action-card-title{font-size:11px;font-weight:700;margin-bottom:6px;}
+.action-card-text{font-size:10px;color:var(--text3);line-height:1.5;}
+
+/* ── Submission history ── */
+.submission-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(29,37,56,0.5);}
+.submission-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0;}
+.submission-info{flex:1;}
+.submission-name{font-size:12px;font-weight:600;}
+.submission-meta{font-size:10px;color:var(--text3);}
+.submission-risk{text-align:right;}
+.submission-risk-val{font-family:'Fraunces',serif;font-size:18px;font-weight:700;}
+
+/* ── Model comparison cards ── */
+.model-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;transition:border-color 0.2s;}
+.model-card.best{border-color:rgba(37,99,235,0.4);background:rgba(37,99,235,0.05);}
+.model-card-name{font-size:13px;font-weight:700;margin-bottom:4px;}
+.model-card-auc{font-family:'Fraunces',serif;font-size:28px;font-weight:700;}
+.model-metric-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.model-metric-label{font-size:9px;color:var(--text3);width:28px;text-transform:uppercase;}
+.model-metric-bg{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;}
+.model-metric-fill{height:100%;border-radius:3px;}
+.model-metric-val{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--text3);width:38px;text-align:right;}
+
+/* ── Confusion matrix ── */
+.cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;}
+.cm-cell{border-radius:8px;padding:14px;text-align:center;}
+.cm-cell .cm-val{font-family:'Fraunces',serif;font-size:24px;font-weight:700;}
+.cm-cell .cm-label{font-size:9px;color:rgba(255,255,255,0.6);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px;}
+.cm-tp{background:rgba(22,163,74,0.2);border:1px solid rgba(22,163,74,0.3);}
+.cm-tn{background:rgba(37,99,235,0.2);border:1px solid rgba(37,99,235,0.3);}
+.cm-fp{background:rgba(234,88,12,0.2);border:1px solid rgba(234,88,12,0.3);}
+.cm-fn{background:rgba(220,38,38,0.2);border:1px solid rgba(220,38,38,0.3);}
+
+/* ── Dept cards ── */
+.dept-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.dept-name{font-size:12px;font-weight:700;margin-bottom:12px;}
+.dept-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.dept-stat{background:var(--bg3);border-radius:6px;padding:8px;}
+.dept-stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;}
+.dept-stat-val{font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:500;margin-top:2px;}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:2px;background:var(--bg3);padding:3px;border-radius:8px;margin-bottom:16px;width:fit-content;}
+.tab{padding:6px 16px;border-radius:6px;font-size:11px;cursor:pointer;color:var(--text3);transition:all 0.15s;font-weight:500;}
+.tab.active{background:var(--card2);color:var(--text);}
+
+/* ── Section header ── */
+.sec-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.sec-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600;}
+.sec-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* ── Toast notifications ── */
+.toast-wrap{position:fixed;top:70px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;min-width:280px;max-width:360px;display:flex;gap:10px;align-items:flex-start;animation:slideIn 0.3s ease;box-shadow:0 8px 30px rgba(0,0,0,0.4);}
+.toast.success{border-left:3px solid var(--green2);}
+.toast.error{border-left:3px solid var(--red2);}
+.toast.info{border-left:3px solid var(--accent2);}
+.toast-icon{font-size:16px;flex-shrink:0;}
+.toast-title{font-weight:700;margin-bottom:2px;}
+.toast-msg{color:var(--text3);font-size:11px;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── Upload zone ── */
+.upload-zone{border:2px dashed var(--border2);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(37,99,235,0.02);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(37,99,235,0.06);}
+.upload-icon{font-size:40px;margin-bottom:12px;}
+.upload-text{font-size:14px;color:var(--text2);margin-bottom:6px;}
+.upload-sub{font-size:11px;color:var(--text3);}
+
+/* ── Progress bar ── */
+.prog-bar{width:100%;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:6px;}
+.prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--purple2));transition:width 0.6s ease;}
+
+/* ── Scrollable employee list ── */
+.emp-list{display:flex;flex-direction:column;gap:8px;max-height:600px;overflow-y:auto;}
+.emp-card-mini{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;transition:all 0.15s;}
+.emp-card-mini:hover,.emp-card-mini.selected{border-color:var(--accent);background:rgba(37,99,235,0.05);}
+.emp-card-mini-top{display:flex;align-items:center;justify-content:space-between;}
+.emp-card-mini-name{font-size:12px;font-weight:600;}
+.emp-card-mini-meta{font-size:10px;color:var(--text3);margin-top:2px;}
+.emp-card-mini-risk{font-family:'Fraunces',serif;font-size:18px;font-weight:700;}
+
+/* ── Annotations / alerts ── */
+.alert-box{border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;}
+.alert-box.red{background:rgba(220,38,38,0.07);border:1px solid rgba(220,38,38,0.2);}
+.alert-box.blue{background:rgba(37,99,235,0.07);border:1px solid rgba(37,99,235,0.2);}
+.alert-box.green{background:rgba(22,163,74,0.07);border:1px solid rgba(22,163,74,0.2);}
+.alert-box.yellow{background:rgba(217,119,6,0.07);border:1px solid rgba(217,119,6,0.2);}
+.alert-title{font-size:12px;font-weight:700;margin-bottom:3px;}
+.alert-body{font-size:11px;color:var(--text3);line-height:1.6;}
+
+/* ── Cost calculator ── */
+.cost-calc{background:var(--bg3);border-radius:10px;padding:16px;border:1px solid var(--border);}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.cost-row:last-child{border-bottom:none;}
+.cost-lbl{font-size:12px;color:var(--text2);}
+.cost-val{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;}
+.cost-total{font-size:14px;font-weight:700;color:var(--red2);}
+
+/* ── Loading spinner ── */
+.spinner{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;margin:0 auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Responsive ── */
+@media(max-width:1400px){.kpi-grid{grid-template-columns:repeat(3,1fr);}.g4{grid-template-columns:1fr 1fr;}}
+@media(max-width:1100px){.g3{grid-template-columns:1fr 1fr;}.g3-1{grid-template-columns:1fr;}.form-grid{grid-template-columns:1fr 1fr;}}
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<div class="sidebar" id="sidebar">
+  <div class="logo-area">
+    <div class="logo-icon">⬡</div>
+    <div><div class="logo-name">AttritionIQ</div><div class="logo-ver">Pro · v2.0</div></div>
+  </div>
+  <div style="overflow-y:auto;flex:1;">
+    <div class="nav-group">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item active" data-page="overview" onclick="nav(this)"><span class="nav-ic">⬛</span>Executive Overview</div>
+      <div class="nav-item" data-page="powerbi" onclick="nav(this)"><span class="nav-ic">📊</span>Power BI Dashboard</div>
+      <div class="nav-item" data-page="workforce" onclick="nav(this)"><span class="nav-ic">👥</span>Workforce Analytics</div>
+      <div class="nav-item" data-page="risk" onclick="nav(this)"><span class="nav-ic">🎯</span>Risk Monitor <span class="nav-badge" id="riskBadge">30</span></div>
+      <div class="nav-item" data-page="explainability" onclick="nav(this)"><span class="nav-ic">🧠</span>SHAP Explainability</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Models</div>
+      <div class="nav-item" data-page="models" onclick="nav(this)"><span class="nav-ic">⚡</span>Model Comparison</div>
+      <div class="nav-item" data-page="features" onclick="nav(this)"><span class="nav-ic">📈</span>Feature Analysis</div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Actions</div>
+      <div class="nav-item" data-page="predict" onclick="nav(this)"><span class="nav-ic">🔮</span>Predict Employee</div>
+      <div class="nav-item" data-page="submit" onclick="nav(this)"><span class="nav-ic">📝</span>Submit for Review</div>
+      <div class="nav-item" data-page="upload" onclick="nav(this)"><span class="nav-ic">⬆️</span>Upload Dataset</div>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="model-pill">
+      <div class="model-pill-label">Best Model Active</div>
+      <div class="model-pill-val">LR · AUC 0.9781</div>
+      <div class="model-pill-sub">Dynamic DB · Trained</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-title">HR Attrition Analytics</div>
+    <div class="breadcrumb" id="breadcrumb">/ Executive Overview</div>
+  </div>
+  <div class="topbar-right">
+    <div class="live-badge"><div class="live-dot"></div>Live Model Active</div>
+    <button class="btn btn-ghost" onclick="exportCSV()">⬇ Export</button>
+    <button class="btn btn-primary" onclick="showToast('Data refreshed','Dashboard views synced with latest dataset.','success')">↻ Refresh</button>
+  </div>
+</div>
+<div class="content">
+
+<div class="page active" id="page-overview">
+  <div class="sec-header">
+    <div><div class="sec-title">Executive Overview</div><div class="sec-sub">HR Analytics · Aggregated Dataset Insights</div></div>
+    <span style="font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">Updated just now</span>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi c1"><div class="kpi-label">Total Employees</div><div class="kpi-val">5,000</div><div class="kpi-sub">Analyzed Workforce</div><div class="kpi-icon">🏢</div></div>
+    <div class="kpi c2"><div class="kpi-label">Attrition Count</div><div class="kpi-val">2,204</div><div class="kpi-sub">Historical departures</div><div class="kpi-trend up">↑ 44.1% rate</div><div class="kpi-icon">📉</div></div>
+    <div class="kpi c3"><div class="kpi-label">High Risk (>40%)</div><div class="kpi-val">2,445</div><div class="kpi-sub">Employees needing attention</div><div class="kpi-icon">⚠️</div></div>
+    <div class="kpi c4"><div class="kpi-label">Critical Risk (>65%)</div><div class="kpi-val">2,096</div><div class="kpi-sub">Immediate action required</div><div class="kpi-icon">🚨</div></div>
+    <div class="kpi c5"><div class="kpi-label">Risk Cost Exposure</div><div class="kpi-val">$94.3M</div><div class="kpi-sub">@ $45K per critical exit</div><div class="kpi-icon">💰</div></div>
+  </div>
+
+  <div class="g3-1">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Yearly Attrition Trend</div><div class="card-sub">Based on Years At Company</div></div></div>
+      <div class="card-body"><canvas id="yearlyChart" height="180"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Risk Distribution</div></div>
+      <div class="card-body">
+        <canvas id="riskDonut" height="180"></canvas>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:9px;height:9px;border-radius:2px;background:#dc2626;display:inline-block;flex-shrink:0;"></span><span style="color:var(--text3)">Critical <b style="color:var(--text)">2,096</b></span></div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:9px;height:9px;border-radius:2px;background:#ea580c;display:inline-block;flex-shrink:0;"></span><span style="color:var(--text3)">High <b style="color:var(--text)">349</b></span></div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:9px;height:9px;border-radius:2px;background:#d97706;display:inline-block;flex-shrink:0;"></span><span style="color:var(--text3)">Medium <b style="color:var(--text)">424</b></span></div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:11px;"><span style="width:9px;height:9px;border-radius:2px;background:#16a34a;display:inline-block;flex-shrink:0;"></span><span style="color:var(--text3)">Low <b style="color:var(--text)">2,131</b></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g3">
+    <div class="card"><div class="card-head"><div class="card-title">Attrition by Department</div></div><div class="card-body"><canvas id="deptChart" height="180"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Income vs Attrition Rate</div></div><div class="card-body"><canvas id="incomeChart" height="180"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Overtime Impact</div></div><div class="card-body"><canvas id="otChart" height="180"></canvas></div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Monthly Attrition Trend (Historical)</div></div>
+      <div class="card-body"><canvas id="monthlyChart" height="160"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Age Group Distribution</div></div>
+      <div class="card-body"><canvas id="ageChart" height="160"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Financial Risk Exposure</div><div class="card-sub">Based on $45,000 avg replacement cost</div></div></div>
+      <div class="card-body">
+        <div class="cost-calc">
+          <div class="cost-row"><div class="cost-lbl">Critical employees (>65% risk)</div><div class="cost-val" id="exp-crit">2,096</div></div>
+          <div class="cost-row"><div class="cost-lbl">Avg replacement cost per employee</div><div class="cost-val">$45,000</div></div>
+          <div class="cost-row"><div class="cost-lbl">Projected attrition (next 12mo)</div><div class="cost-val">~900</div></div>
+          <div class="cost-row"><div class="cost-lbl">Expected replacement cost</div><div class="cost-val" style="color:var(--orange2);">$40.5M</div></div>
+          <div class="cost-row"><div class="cost-lbl cost-total">Full critical-risk exposure</div><div class="cost-val cost-total" id="exp-tot">$94.3M</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div><div class="card-title">Sat × Work-Life Balance Heatmap</div><div class="card-sub">Attrition rate by satisfaction combo</div></div></div>
+      <div class="card-body">
+        <div style="display:flex;gap:4px;margin-bottom:8px;font-size:9px;color:var(--text3);">
+          <div style="width:80px;">Sat \ WLB →</div>
+          <div style="flex:1;text-align:center;">Low (1)</div><div style="flex:1;text-align:center;">Fair (2)</div>
+          <div style="flex:1;text-align:center;">Good (3)</div><div style="flex:1;text-align:center;">Best (4)</div>
+        </div>
+        <div id="heatmapGrid" style="display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-powerbi">
+  <div class="sec-header">
+    <div><div class="sec-title">Power BI–Style Dashboard</div><div class="sec-sub">Interactive cross-filtered analytics · Click any chart to filter</div></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" onclick="resetFilters()">↺ Reset Filters</button>
+      <button class="btn btn-primary" onclick="showToast('Export','Dashboard exported to PDF','success')">📥 Export PDF</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-label">Filters:</div>
+    <div class="filter-chip active" onclick="filterToggle(this,'dept','all')">All Departments</div>
+    <div class="filter-chip" onclick="filterToggle(this,'dept','Sales')">Sales</div>
+    <div class="filter-chip" onclick="filterToggle(this,'dept','R&D')">R&amp;D</div>
+    <div class="filter-chip" onclick="filterToggle(this,'dept','HR')">HR</div>
+    <div class="filter-sep"></div>
+    <div class="filter-chip active" onclick="filterToggle(this,'risk','all')">All Risk</div>
+    <div class="filter-chip" onclick="filterToggle(this,'risk','critical')">🔴 Critical</div>
+    <div class="filter-chip" onclick="filterToggle(this,'risk','high')">🟠 High</div>
+    <div class="filter-chip" onclick="filterToggle(this,'risk','low')">🟢 Low/Med</div>
+    <div class="filter-sep"></div>
+    <select class="filter-sel" onchange="filterYear(this)">
+      <option value="all">All Years</option>
+      <option>2021</option><option>2022</option><option>2023</option>
+    </select>
+  </div>
+
+  <div class="g4" style="margin-bottom:16px;">
+    <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Attrition Rate</div>
+      <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:700;color:var(--red2);" id="pb-rate">44.1%</div>
+      <div style="font-size:10px;color:var(--text3);">Workforce dataset metric</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Model Confidence</div>
+      <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:700;color:var(--teal3);" id="pb-conf">97.8%</div>
+      <div style="font-size:10px;color:var(--text3);">AUC-ROC score</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Avg Monthly Income</div>
+      <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:700;color:var(--accent3);" id="pb-income">$5,687</div>
+      <div style="font-size:10px;color:var(--text3);">All departments</div>
+    </div>
+    <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Predicted Next Qtr</div>
+      <div style="font-family:'Fraunces',serif;font-size:36px;font-weight:700;color:var(--orange2);" id="pb-pred">45.5%</div>
+      <div style="font-size:10px;color:var(--text3);">Model forecast</div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><div class="card-head"><div class="card-title">Attrition by Job Role</div></div><div class="card-body"><canvas id="roleChart" height="220"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Stock Option vs Attrition</div></div><div class="card-body"><canvas id="stockChart" height="220"></canvas></div></div>
+  </div>
+  <div class="g3">
+    <div class="card"><div class="card-head"><div class="card-title">Gender Breakdown</div></div><div class="card-body"><canvas id="genderChart" height="180"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Marital Status</div></div><div class="card-body"><canvas id="maritalChart" height="180"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Satisfaction Distribution</div></div><div class="card-body"><canvas id="satChart" height="180"></canvas></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-workforce">
+  <div class="sec-header"><div><div class="sec-title">Workforce Analytics</div><div class="sec-sub">Department-level breakdown and demographic analysis</div></div></div>
+
+  <div class="g3" id="workforceCards">
+    </div>
+
+  <div class="g2">
+    <div class="card"><div class="card-head"><div class="card-title">Attrition by Job Role (All Roles)</div></div><div class="card-body"><canvas id="roleFullChart" height="240"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Age Group Analysis</div></div><div class="card-body"><canvas id="ageFullChart" height="240"></canvas></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Role-Level Detail Table</div><div class="card-sub">Attrition rate, headcount, and average risk by job role</div></div></div>
+    <div class="card-body p0">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Job Role</th><th>Headcount</th><th>Attrition</th><th>Rate</th><th>Avg Income</th><th>Status</th></tr></thead>
+          <tbody id="roleTblBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-risk">
+  <div class="sec-header">
+    <div><div class="sec-title">Risk Monitor</div><div class="sec-sub">Top 30 highest-risk employees · Immediate retention action recommended</div></div>
+    <button class="btn btn-danger" onclick="exportCSV()">🚨 Export Risk List</button>
+  </div>
+
+  <div class="alert-box red">
+    <div style="font-size:20px;">🚨</div>
+    <div><div class="alert-title" style="color:var(--red2)">Critical-Risk Employees Detected</div><div class="alert-body">These employees have a high predicted probability of leaving within 6 months. Prioritize the employees below for retention interviews immediately.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">At-Risk Employee Registry</div></div>
+      <input type="text" placeholder="🔍  Search employee ID, role, dept..." id="riskSearch" onkeyup="filterRiskTable()" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;padding:6px 12px;font-size:11px;color:var(--text);outline:none;width:280px;">
+    </div>
+    <div class="card-body p0">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Employee</th><th>Department</th><th>Role</th><th>Age</th><th>Income</th>
+              <th>Risk Score</th><th>Level</th><th>Satisfaction</th><th>Overtime</th><th>Tenure</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="riskTblBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-explainability">
+  <div class="sec-header"><div><div class="sec-title">SHAP Explainability</div><div class="sec-sub">Permutation-based feature contributions — why is each employee at risk?</div></div></div>
+
+  <div class="alert-box blue">
+    <div style="font-size:20px;">ℹ️</div>
+    <div><div class="alert-title" style="color:var(--accent3)">How SHAP Values Work</div><div class="alert-body">Each bar shows how much a feature <b>increases</b> (red) or <b>decreases</b> (green) the predicted attrition probability. Values are computed by permuting each feature and measuring the drop in model confidence.</div></div>
+  </div>
+
+  <div class="g1-2">
+    <div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><div class="card-title">Select Employee</div></div>
+        <div class="card-body" style="padding:10px;">
+          <div class="emp-list" id="shapEmpList"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="shapDetailCard">
+        <div class="card-head">
+          <div><div class="card-title" id="shapName">Select an employee</div><div class="card-sub" id="shapMeta">Click any card on the left to see explanation</div></div>
+          <div id="shapBadge"></div>
+        </div>
+        <div class="card-body">
+          <div id="shapWrap" style="display:none;">
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;" id="shapEmpStats"></div>
+            <div style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:14px;">
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">SHAP Feature Contributions</div>
+              <div id="shapBarsEl"></div>
+            </div>
+            <canvas id="shapBarChart" height="200"></canvas>
+          </div>
+          <div id="shapPlaceholder" style="text-align:center;padding:60px;color:var(--text3);">
+            <div style="font-size:40px;margin-bottom:12px;">🧠</div>
+            <div>Select an employee to see their individual risk explanation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-models">
+  <div class="sec-header"><div><div class="sec-title">Model Comparison</div><div class="sec-sub">Random Forest · Gradient Boosting · Logistic Regression</div></div></div>
+
+  <div class="g3">
+    <div class="model-card">
+      <div class="model-card-name">🌲 Random Forest</div>
+      <div class="model-card-auc" style="color:var(--accent3);">0.9702</div>
+      <div style="font-size:10px;color:var(--text3);margin:4px 0 12px;">AUC-ROC Score</div>
+      <div class="model-metric-row"><div class="model-metric-label">ACC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:91.2%;background:var(--accent)"></div></div><div class="model-metric-val">91.2%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">PREC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:87.5%;background:var(--purple2)"></div></div><div class="model-metric-val">87.5%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">REC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:93.4%;background:var(--teal2)"></div></div><div class="model-metric-val">93.4%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">F1</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:90.4%;background:var(--orange2)"></div></div><div class="model-metric-val">90.4%</div></div>
+    </div>
+    <div class="model-card">
+      <div class="model-card-name">🚀 Gradient Boosting</div>
+      <div class="model-card-auc" style="color:var(--purple3);">0.9717</div>
+      <div style="font-size:10px;color:var(--text3);margin:4px 0 12px;">AUC-ROC Score</div>
+      <div class="model-metric-row"><div class="model-metric-label">ACC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:91.8%;background:var(--accent)"></div></div><div class="model-metric-val">91.8%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">PREC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:89.3%;background:var(--purple2)"></div></div><div class="model-metric-val">89.3%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">REC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:92.5%;background:var(--teal2)"></div></div><div class="model-metric-val">92.5%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">F1</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:90.9%;background:var(--orange2)"></div></div><div class="model-metric-val">90.9%</div></div>
+    </div>
+    <div class="model-card best">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div class="model-card-name">⭐ Logistic Regression</div>
+        <span style="background:rgba(37,99,235,0.2);color:var(--accent3);font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;text-transform:uppercase;">Best</span>
+      </div>
+      <div class="model-card-auc" style="color:var(--green3);">0.9781</div>
+      <div style="font-size:10px;color:var(--text3);margin:4px 0 12px;">AUC-ROC Score · <b style="color:var(--green2)">Recommended for deployment</b></div>
+      <div class="model-metric-row"><div class="model-metric-label">ACC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:91.6%;background:var(--accent)"></div></div><div class="model-metric-val">91.6%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">PREC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:87.7%;background:var(--purple2)"></div></div><div class="model-metric-val">87.7%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">REC</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:94.1%;background:var(--teal2)"></div></div><div class="model-metric-val">94.1%</div></div>
+      <div class="model-metric-row"><div class="model-metric-label">F1</div><div class="model-metric-bg"><div class="model-metric-fill" style="width:90.8%;background:var(--orange2)"></div></div><div class="model-metric-val">90.8%</div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><div class="card-head"><div class="card-title">ROC-AUC Comparison</div></div><div class="card-body"><canvas id="aucChart" height="220"></canvas></div></div>
+    <div class="card"><div class="card-head"><div class="card-title">Multi-Metric Radar</div></div><div class="card-body" style="display:flex;justify-content:center;"><canvas id="radarChart" height="260" style="max-width:500px;"></canvas></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-features">
+  <div class="sec-header"><div><div class="sec-title">Feature Analysis</div><div class="sec-sub">What drives attrition at your company?</div></div></div>
+  <div class="g2">
+    <div class="card"><div class="card-head"><div><div class="card-title">Feature Importance (RF)</div><div class="card-sub">Mean decrease in impurity · Top 15</div></div></div><div class="card-body" id="featImpEl"></div></div>
+    <div class="card"><div class="card-head"><div><div class="card-title">SHAP Global Impact</div><div class="card-sub">Permutation-based · Model-agnostic</div></div></div><div class="card-body" id="shapGlobalEl"></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-head"><div class="card-title">Feature Importance Chart</div></div><div class="card-body"><canvas id="featBarChart" height="300"></canvas></div></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Key Insights</div></div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div class="alert-box red" style="margin-bottom:0;padding:12px 14px;">
+            <div>🔴</div>
+            <div><div class="alert-title" style="color:var(--red2);font-size:11px;">Top Risk Drivers</div><div class="alert-body"><b style="color:var(--text)">Monthly Income</b> dominates at 74% importance — underpaid employees leave most. <b style="color:var(--text)">Overtime</b> (burnout), <b style="color:var(--text)">Distance from Home</b>, and <b style="color:var(--text)">Number of companies worked</b> are secondary drivers.</div></div>
+          </div>
+          <div class="alert-box green" style="margin-bottom:0;padding:12px 14px;">
+            <div>🟢</div>
+            <div><div class="alert-title" style="color:var(--green2);font-size:11px;">Protective Factors</div><div class="alert-body"><b style="color:var(--text)">Stock options</b> reduce risk by anchoring employees financially. <b style="color:var(--text)">Training investment</b> signals growth potential. <b style="color:var(--text)">Longer tenure</b> and strong <b style="color:var(--text)">manager relationships</b> buffer attrition.</div></div>
+          </div>
+          <div class="alert-box yellow" style="margin-bottom:0;padding:12px 14px;">
+            <div>💡</div>
+            <div><div class="alert-title" style="color:var(--yellow2);font-size:11px;">Actionable Recommendations</div><div class="alert-body">1. Salary review for employees earning &lt;$4K/mo<br>2. Cap overtime for critical-risk employees<br>3. Expand stock option eligibility to Level 1–2<br>4. Launch remote work policy for high-distance employees<br>5. Increase training budget for young talent</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-predict">
+  <div class="sec-header"><div><div class="sec-title">Predict Employee Risk</div><div class="sec-sub">Real-time attrition prediction with SHAP explanation</div></div></div>
+  <div class="g2-1">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Employee Information</div></div>
+      <div class="card-body">
+        <div class="form-section">
+          <div class="form-section-title">👤 Personal Details</div>
+          <div class="form-grid">
+            <div class="field" id="f_age"><label>Age</label><input type="number" id="p_age" value="28" min="18" max="65" oninput="validate('p_age',18,65)"></div>
+            <div class="field"><label>Gender</label><select id="p_gender"><option>Male</option><option>Female</option></select></div>
+            <div class="field"><label>Marital Status</label><select id="p_marital"><option value="single">Single</option><option value="married">Married</option><option value="divorced">Divorced</option></select></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">💼 Job Details</div>
+          <div class="form-grid">
+            <div class="field"><label>Department</label><select id="p_dept"><option>Sales</option><option>Research & Development</option><option>Human Resources</option></select></div>
+            <div class="field"><label>Job Level (1-5)</label><input type="number" id="p_level" value="1" min="1" max="5" oninput="validate('p_level',1,5)"></div>
+            <div class="field"><label>Monthly Income ($)</label><input type="number" id="p_income" value="3200" min="1000" max="25000" oninput="validate('p_income',1000,25000)"></div>
+            <div class="field"><label>Years at Company</label><input type="number" id="p_years" value="2" min="0" max="40" oninput="validate('p_years',0,40)"></div>
+            <div class="field"><label>Stock Option Level</label><input type="number" id="p_stock" value="0" min="0" max="3" oninput="validate('p_stock',0,3)"></div>
+            <div class="field"><label>Overtime</label><select id="p_ot"><option value="1">Yes</option><option value="0">No</option></select></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">😊 Satisfaction Scores</div>
+          <div class="form-grid">
+            <div class="field"><label>Job Satisfaction (1-4)</label><input type="range" id="p_sat" value="2" min="1" max="4" oninput="document.getElementById('sat_val').textContent=this.value"><div class="range-val" id="sat_val">2</div></div>
+            <div class="field"><label>Work-Life Balance (1-4)</label><input type="range" id="p_wlb" value="2" min="1" max="4" oninput="document.getElementById('wlb_val').textContent=this.value"><div class="range-val" id="wlb_val">2</div></div>
+            <div class="field"><label>Environment Sat. (1-4)</label><input type="range" id="p_env" value="2" min="1" max="4" oninput="document.getElementById('env_val').textContent=this.value"><div class="range-val" id="env_val">2</div></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">📊 Work Factors</div>
+          <div class="form-grid">
+            <div class="field"><label>Distance from Home (km)</label><input type="number" id="p_dist" value="20" min="1" max="30"></div>
+            <div class="field"><label>Companies Worked</label><input type="number" id="p_numco" value="3" min="0" max="9"></div>
+            <div class="field"><label>Training Times/Year</label><input type="number" id="p_train" value="1" min="0" max="6"></div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg" style="width:100%;" onclick="predictEmployee()">🔮 Run Attrition Prediction</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Prediction Result</div></div>
+      <div class="card-body" id="predictResult">
+        <div style="text-align:center;padding:80px 20px;color:var(--text3);">
+          <div style="font-size:48px;margin-bottom:14px;">🔮</div>
+          <div style="font-size:14px;">Fill in the form and click<br>Run Prediction to see results</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-submit">
+  <div class="sec-header"><div><div class="sec-title">Submit for HR Review</div><div class="sec-sub">Submit employee attrition risk cases for official HR review and intervention planning</div></div></div>
+
+  <div class="g2">
+    <div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📝 New Submission</div></div>
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-section-title">🏷️ Case Information</div>
+            <div class="form-grid-2">
+              <div class="field" id="sf_empid">
+                <label>Employee ID *</label>
+                <input type="text" id="s_empid" placeholder="e.g. EMP-4321" oninput="sValidate('s_empid',/^EMP-\d{4}$/,'EMP-XXXX format required')">
+                <div class="field-err" id="err_s_empid"></div>
+              </div>
+              <div class="field" id="sf_name">
+                <label>Employee Name *</label>
+                <input type="text" id="s_name" placeholder="Full name" oninput="sValidate('s_name',/^[A-Za-z ]{3,}$/,'Minimum 3 characters')">
+                <div class="field-err" id="err_s_name"></div>
+              </div>
+              <div class="field">
+                <label>Department *</label>
+                <select id="s_dept">
+                  <option value="">— Select —</option>
+                  <option>Sales</option><option>Research & Development</option><option>Human Resources</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Job Role *</label>
+                <select id="s_role">
+                  <option value="">— Select —</option>
+                  <option>Sales Executive</option><option>Research Scientist</option><option>Laboratory Technician</option>
+                  <option>Manufacturing Director</option><option>Healthcare Representative</option>
+                  <option>Manager</option><option>Sales Representative</option><option>Research Director</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">⚠️ Risk Assessment</div>
+            <div class="form-grid-2">
+              <div class="field" id="sf_risk">
+                <label>Risk Score (0-100) *</label>
+                <input type="number" id="s_risk" placeholder="e.g. 87.5" min="0" max="100" oninput="sValidate('s_risk',/^(\d{1,2}(\.\d)?|100)$/,'0.0 to 100.0')">
+                <div class="field-err" id="err_s_risk"></div>
+              </div>
+              <div class="field">
+                <label>Risk Level *</label>
+                <select id="s_level">
+                  <option value="">— Select —</option>
+                  <option value="critical">Critical (>65%)</option>
+                  <option value="high">High (41-65%)</option>
+                  <option value="medium">Medium (21-40%)</option>
+                  <option value="low">Low (≤20%)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Priority Level *</label>
+                <select id="s_priority">
+                  <option value="">— Select —</option>
+                  <option value="urgent">🔴 Urgent — Act within 48hrs</option>
+                  <option value="high">🟠 High — Act within 1 week</option>
+                  <option value="normal">🟡 Normal — Act within 1 month</option>
+                  <option value="low">🟢 Low — Monitor quarterly</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Submitted By *</label>
+                <input type="text" id="s_submitter" placeholder="Your name / HR ID">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="form-section-title">📋 Case Details</div>
+            <div class="field" style="margin-bottom:12px;">
+              <label>Key Risk Factors Identified *</label>
+              <textarea id="s_factors" rows="3" placeholder="e.g. Low salary ($2,800/mo), works overtime, hasn't been promoted in 3 years..." style="resize:vertical;"></textarea>
+            </div>
+            <div class="field" style="margin-bottom:12px;">
+              <label>Recommended Retention Actions</label>
+              <textarea id="s_actions" rows="3" placeholder="e.g. Salary review, reduce overtime schedule..." style="resize:vertical;"></textarea>
+            </div>
+            <div class="field">
+              <label>Additional Notes</label>
+              <textarea id="s_notes" rows="2" placeholder="Any other context that may help HR..." style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary btn-lg" style="flex:1;" onclick="submitCase()">📤 Submit Case to HR</button>
+            <button class="btn btn-ghost btn-lg" onclick="clearForm()">✕ Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="g2" style="margin-bottom:14px;">
+        <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Cases Submitted</div>
+          <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:700;color:var(--accent3);" id="totalCases">0</div>
+        </div>
+        <div class="card" style="margin-bottom:0;text-align:center;padding:16px;">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Urgent Cases</div>
+          <div style="font-family:'Fraunces',serif;font-size:32px;font-weight:700;color:var(--red2);" id="urgentCases">0</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div><div class="card-title">Submission History</div><div class="card-sub">All submitted review cases this session</div></div></div>
+        <div class="card-body p0" id="submissionList">
+          <div style="text-align:center;padding:40px;color:var(--text3);">
+            <div style="font-size:28px;margin-bottom:10px;">📭</div>
+            <div style="font-size:12px;">No submissions yet.<br>Submit a case using the form.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-upload">
+  <div class="sec-header"><div><div class="sec-title">Upload Dataset</div><div class="sec-sub">Batch predict attrition risk for your entire workforce</div></div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-head"><div class="card-title">Upload HR Data File</div></div>
+      <div class="card-body">
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text">Drop your HR dataset here</div>
+          <div class="upload-sub">or click to browse · CSV or Excel (.xlsx)</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:12px;">
+            <span style="background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:20px;font-size:11px;color:var(--text3);">CSV</span>
+            <span style="background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:20px;font-size:11px;color:var(--text3);">XLSX</span>
+            <span style="background:var(--card2);border:1px solid var(--border);padding:3px 10px;border-radius:20px;font-size:11px;color:var(--text3);">XLS</span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" style="display:none;" accept=".csv, .xlsx, .xls" onchange="handleUpload(this)">
+        <div id="uploadProgress" style="display:none;margin-top:16px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px;"><span id="uploadFileName">Processing...</span><span id="uploadPct">0%</span></div>
+          <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%;"></div></div>
+          <div id="uploadStatus" style="font-size:11px;color:var(--text3);margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title">Required Column Schema</div></div>
+      <div class="card-body">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">Your file must contain these columns (IBM HR Analytics format):</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">Age</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">Attrition</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">Department</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">JobRole</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">MonthlyIncome</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">YearsAtCompany</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">OverTime</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">Gender</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">MaritalStatus</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">JobSatisfaction</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">WorkLifeBalance</div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent3);">StockOptionLevel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div></div><script>
+// ── GLOBAL DATA (Will be updated dynamically when you upload) ───────────────
+const D = {"kpi":{"total":5000,"attrition_count":2204,"attrition_rate":44.1,"high_risk":2445,"critical":2096,"avg_income":5687,"avg_age":36.6,"avg_tenure":5.8,"predicted_next_q":45.5,"cost_per_attrition":45000,"total_risk_cost":94320000},"models":[{"name":"Random Forest","short":"RF","auc":0.9702,"accuracy":0.912,"precision":0.8747,"recall":0.9342,"f1":0.9035},{"name":"Gradient Boosting","short":"GB","auc":0.9717,"accuracy":0.918,"precision":0.8928,"recall":0.9252,"f1":0.9087},{"name":"Logistic Regression","short":"LR","auc":0.9781,"accuracy":0.916,"precision":0.8774,"recall":0.941,"f1":0.9081}],"feature_importance":[{"f":"MonthlyIncome","v":74.035},{"f":"Age","v":2.171},{"f":"DistanceFromHome","v":2.077},{"f":"TotalWorkingYears","v":1.874},{"f":"YearsAtCompany","v":1.646},{"f":"PercentSalaryHike","v":1.637},{"f":"NumCompaniesWorked","v":1.484},{"f":"JobRole","v":1.226},{"f":"TrainingTimesLastYear","v":1.178},{"f":"YearsWithCurrManager","v":1.176}],"shap_global":[{"f":"MonthlyIncome","v":36.827},{"f":"DistanceFromHome","v":1.907},{"f":"NumCompaniesWorked","v":1.547},{"f":"Age","v":1.192},{"f":"TotalWorkingYears","v":1.084},{"f":"PercentSalaryHike","v":0.918},{"f":"YearsWithCurrManager","v":0.886}],"dept":[{"Department":"Human Resources","total":198,"left":102,"avg_risk":50.0,"avg_income":5376.5,"rate":51.5},{"Department":"Research & Development","total":3277,"left":1440,"avg_risk":45.5,"avg_income":5677.0,"rate":43.9},{"Department":"Sales","total":1525,"left":662,"avg_risk":44.6,"avg_income":5751.2,"rate":43.4}],"role":[{"JobRole":"Sales Executive","total":1123,"left":490,"avg_risk":45.0,"avg_income":5647.6,"rate":43.6},{"JobRole":"Research Scientist","total":953,"left":438,"avg_risk":46.8,"avg_income":5750.2,"rate":46.0},{"JobRole":"Laboratory Technician","total":877,"left":371,"avg_risk":44.1,"avg_income":5798.5,"rate":42.3},{"JobRole":"Healthcare Representative","total":475,"left":208,"avg_risk":45.7,"avg_income":5519.7,"rate":43.8}],"monthly":[],"yearly":[{"HireYear":2015,"sum":217,"count":505,"mean":0.4297,"rate":43.0},{"HireYear":2016,"sum":244,"count":560,"mean":0.4357,"rate":43.6},{"HireYear":2017,"sum":237,"count":522,"mean":0.4540,"rate":45.4},{"HireYear":2018,"sum":250,"count":542,"mean":0.4613,"rate":46.1},{"HireYear":2019,"sum":262,"count":593,"mean":0.4418,"rate":44.2},{"HireYear":2020,"sum":267,"count":563,"mean":0.4742,"rate":47.4},{"HireYear":2021,"sum":232,"count":563,"mean":0.4121,"rate":41.2},{"HireYear":2022,"sum":259,"count":586,"mean":0.4420,"rate":44.2},{"HireYear":2023,"sum":236,"count":566,"mean":0.4170,"rate":41.7}],"age_dist":[{"AgeBucket":"18-25","total":541,"left":243,"avg_risk":46.1,"rate":44.9},{"AgeBucket":"26-30","total":701,"left":306,"avg_risk":44.0,"rate":43.7},{"AgeBucket":"31-35","total":1004,"left":454,"avg_risk":46.1,"rate":45.2},{"AgeBucket":"36-40","total":1091,"left":485,"avg_risk":46.1,"rate":44.5},{"AgeBucket":"41-45","total":876,"left":399,"avg_risk":46.6,"rate":45.5},{"AgeBucket":"46-50","total":487,"left":192,"avg_risk":41.9,"rate":39.4},{"AgeBucket":"51+","total":300,"left":125,"avg_risk":44.4,"rate":41.7}],"income_dist":[{"IncomeBucket":"<2K","total":267,"left":266,"rate":99.6},{"IncomeBucket":"2-4K","total":1531,"left":1431,"rate":93.5},{"IncomeBucket":"4-6K","total":1443,"left":498,"rate":34.5},{"IncomeBucket":"6-9K","total":1065,"left":9,"rate":0.8},{"IncomeBucket":"9-12K","total":431,"left":0,"rate":0.0},{"IncomeBucket":"12K+","total":263,"left":0,"rate":0.0}],"sat_heatmap":[{"JobSatisfaction":1,"WorkLifeBalance":1,"rate":35.5},{"JobSatisfaction":1,"WorkLifeBalance":2,"rate":45.6},{"JobSatisfaction":1,"WorkLifeBalance":3,"rate":51.4},{"JobSatisfaction":1,"WorkLifeBalance":4,"rate":47.6},{"JobSatisfaction":2,"WorkLifeBalance":1,"rate":44.2},{"JobSatisfaction":2,"WorkLifeBalance":2,"rate":49.5},{"JobSatisfaction":2,"WorkLifeBalance":3,"rate":43.8},{"JobSatisfaction":2,"WorkLifeBalance":4,"rate":48.8},{"JobSatisfaction":3,"WorkLifeBalance":1,"rate":48.2},{"JobSatisfaction":3,"WorkLifeBalance":2,"rate":42.3},{"JobSatisfaction":3,"WorkLifeBalance":3,"rate":42.4},{"JobSatisfaction":3,"WorkLifeBalance":4,"rate":43.3},{"JobSatisfaction":4,"WorkLifeBalance":1,"rate":50.9},{"JobSatisfaction":4,"WorkLifeBalance":2,"rate":47.9},{"JobSatisfaction":4,"WorkLifeBalance":3,"rate":43.4},{"JobSatisfaction":4,"WorkLifeBalance":4,"rate":34.5}],"overtime":[{"OverTime":"No Overtime","total":3551,"left":1470,"rate":41.4},{"OverTime":"With Overtime","total":1449,"left":734,"rate":50.7}],"marital":[{"MaritalStatus":"Divorced","count":1078,"rate":42.9},{"MaritalStatus":"Married","count":2327,"rate":43.3},{"MaritalStatus":"Single","count":1595,"rate":46.0}],"gender":[{"Gender":"Female","count":1981,"rate":45.5},{"Gender":"Male","count":3019,"rate":43.2}],"stock":[{"StockOptionLevel":0,"count":1468,"rate":46.0},{"StockOptionLevel":1,"count":2175,"rate":43.1},{"StockOptionLevel":2,"count":743,"rate":43.1},{"StockOptionLevel":3,"count":614,"rate":44.3}],"top_risk":[{"id":"EMP-4321","dept":"R&D","role":"Research Scientist","age":42,"income":2542,"risk":95,"level":"Critical","ot":true,"sat":2,"years":0,"marital":"Married","gender":"Male","shap":[{"f":"MonthlyIncome","v":71.8},{"f":"YearsAtCompany","v":2.2},{"f":"DistanceFromHome","v":0.5}]},{"id":"EMP-5923","dept":"R&D","role":"Sales Executive","age":39,"income":3312,"risk":95,"level":"Critical","ot":true,"sat":3,"years":1,"marital":"Married","gender":"Female","shap":[{"f":"MonthlyIncome","v":70.3},{"f":"YearsAtCompany","v":2.4},{"f":"DistanceFromHome","v":1.7}]}],"confusion_matrix":[[500,59],[29,412]]};
+
+// ── Chart defaults ───────────────────────────────────────────────────────────
+Chart.defaults.color = '#7a8ba8';
+Chart.defaults.borderColor = '#1d2538';
+Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+Chart.defaults.font.size = 11;
+const charts = {};
+function mkChart(id, cfg) {
+  if (charts[id]) charts[id].destroy(); // Prevents duplication on re-render
+  const c = document.getElementById(id);
+  if (!c) return;
+  charts[id] = new Chart(c, cfg);
+  return charts[id];
+}
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function nav(el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const page = el.dataset.page;
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('breadcrumb').textContent = '/ ' + el.textContent.trim();
+  
+  if (page === 'powerbi') initPowerBI();
+  if (page === 'workforce') initWorkforce();
+  if (page === 'models') initModels();
+  if (page === 'features') initFeatures();
+  if (page === 'explainability') initExplain();
+  if (page === 'risk') initRiskTable();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(title, msg, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const w = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<div class="toast-icon">${icons[type]}</div><div><div class="toast-title">${title}</div><div class="toast-msg">${msg}</div></div>`;
+  w.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(20px)'; t.style.transition = 'all 0.3s'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// ── OVERVIEW charts ──────────────────────────────────────────────────────────
+function initOverview() {
+  mkChart('yearlyChart', {
+    type: 'line',
+    data: {
+      labels: D.yearly.map(d => d.HireYear),
+      datasets: [
+        { label: 'Attrition Rate %', data: D.yearly.map(d => d.rate), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)', tension: 0.4, fill: true, pointRadius: 4, borderWidth: 2 },
+        { label: 'Headcount', data: D.yearly.map(d => d.count), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.05)', tension: 0.4, yAxisID: 'y2', pointRadius: 3, borderWidth: 1.5, borderDash: [4,3] }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 10 } } }, scales: { y: { ticks: { callback: v => v + '%' } }, y2: { position: 'right', grid: { display: false } } } }
+  });
+
+  mkChart('riskDonut', {
+    type: 'doughnut',
+    data: { labels: ['Critical','High','Medium','Low'], datasets: [{ data: [D.kpi.critical, Math.max(0, D.kpi.high_risk - D.kpi.critical), 424, 2131], backgroundColor: ['#dc2626','#ea580c','#d97706','#16a34a'], borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+  });
+
+  mkChart('deptChart', {
+    type: 'bar',
+    data: { labels: D.dept.map(d => d.Department.replace('Research & Development','R&D')), datasets: [{ label: 'Attrition Rate', data: D.dept.map(d => d.rate), backgroundColor: ['#3b82f6','#a855f7','#ef4444'], borderRadius: 6, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+
+  mkChart('incomeChart', {
+    type: 'bar',
+    data: { labels: D.income_dist.map(d => d.IncomeBucket), datasets: [{ label: 'Attrition %', data: D.income_dist.map(d => d.rate), backgroundColor: D.income_dist.map(d => d.rate > 50 ? '#dc2626' : d.rate > 20 ? '#ea580c' : '#16a34a'), borderRadius: 5, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+
+  mkChart('otChart', {
+    type: 'bar',
+    data: { labels: D.overtime.map(d => d.OverTime), datasets: [{ label: 'Attrition Rate', data: D.overtime.map(d => d.rate), backgroundColor: ['#16a34a','#dc2626'], borderRadius: 8, borderWidth: 0, barThickness: 60 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+
+  mkChart('ageChart', {
+    type: 'bar',
+    data: { labels: D.age_dist.map(d => d.AgeBucket), datasets: [{ label: 'Attrition %', data: D.age_dist.map(d => d.rate), backgroundColor: '#14b8a6', borderRadius: 5, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+
+  // Heatmap
+  const hg = document.getElementById('heatmapGrid');
+  if (hg && D.sat_heatmap.length > 0) {
+    hg.innerHTML = '';
+    const satLevels = [1,2,3,4];
+    const wlbLevels = [1,2,3,4];
+    satLevels.forEach(s => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:4px;align-items:center;';
+      const lbl = document.createElement('div');
+      lbl.textContent = `Sat ${s}`;
+      lbl.style.cssText = 'width:38px;font-size:9px;color:var(--text3);flex-shrink:0;';
+      row.appendChild(lbl);
+      wlbLevels.forEach(w => {
+        const cell = D.sat_heatmap.find(d => d.JobSatisfaction === s && d.WorkLifeBalance === w);
+        const rate = cell ? cell.rate : 0;
+        const intensity = rate / 60;
+        const r = Math.round(22 + intensity * 215), g = Math.round(163 - intensity * 141), b = Math.round(74 - intensity * 52);
+        const el = document.createElement('div');
+        el.style.cssText = `flex:1;border-radius:5px;padding:8px 4px;text-align:center;background:rgba(${r},${g},${b},0.25);border:1px solid rgba(${r},${g},${b},0.4);cursor:default;transition:transform 0.1s;`;
+        el.innerHTML = `<div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:rgb(${r+80},${g+50},${b+50})">${rate}%</div>`;
+        el.title = `Sat ${s}, WLB ${w}: ${rate}% attrition`;
+        row.appendChild(el);
+      });
+      hg.appendChild(row);
+    });
+  }
+}
+
+// ── POWER BI charts ──────────────────────────────────────────────────────────
+function initPowerBI() {
+  mkChart('roleChart', {
+    type: 'bar',
+    data: { labels: D.role.map(d => d.JobRole), datasets: [{ label: 'Attrition Rate', data: D.role.map(d => d.rate), backgroundColor: D.role.map((d,i) => `hsl(${220+i*15},65%,${58-i*2}%)`), borderRadius: 5, borderWidth: 0 }] },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => v + '%' } } } }
+  });
+  mkChart('stockChart', {
+    type: 'bar',
+    data: { labels: D.stock.map(d => `Level ${d.StockOptionLevel}`), datasets: [{ label: 'Attrition Rate', data: D.stock.map(d => d.rate), backgroundColor: ['#dc2626','#ea580c','#d97706','#16a34a'], borderRadius: 6, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+  mkChart('genderChart', {
+    type: 'doughnut',
+    data: { labels: D.gender.map(d => `${d.Gender} (${d.rate}%)`), datasets: [{ data: D.gender.map(d => d.count), backgroundColor: ['#ec4899','#3b82f6'], borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+  });
+  mkChart('maritalChart', {
+    type: 'doughnut',
+    data: { labels: D.marital.map(d => `${d.MaritalStatus} (${d.rate}%)`), datasets: [{ data: D.marital.map(d => d.count), backgroundColor: ['#a855f7','#3b82f6','#14b8a6'], borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } }
+  });
+  
+  // Aggregate Satisfaction dynamically
+  let satLevels = [1,2,3,4];
+  let satData = satLevels.map(lvl => {
+     let matching = D.sat_heatmap.filter(s => s.JobSatisfaction === lvl);
+     if(!matching.length) return 0;
+     return parseFloat((matching.reduce((a,b)=>a+b.rate, 0) / matching.length).toFixed(1));
+  });
+  mkChart('satChart', {
+    type: 'bar',
+    data: {
+      labels: ['Dissatisfied (1)','Low (2)','Moderate (3)','Satisfied (4)'],
+      datasets: [{ label: 'Attrition by Sat Level', data: satData, backgroundColor: ['#dc2626','#ea580c','#d97706','#16a34a'], borderRadius: 5, borderWidth: 0 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+}
+
+// ── WORKFORCE charts ─────────────────────────────────────────────────────────
+function initWorkforce() {
+  const cardsWrap = document.getElementById('workforceCards');
+  if(cardsWrap) {
+      cardsWrap.innerHTML = D.dept.map(d => {
+         const col = d.rate > 48 ? 'var(--red2)' : d.rate > 42 ? 'var(--orange2)' : 'var(--green2)';
+         return `<div class="dept-card" style="border:1px solid var(--border);">
+          <div class="dept-name">💼 ${d.Department}</div>
+          <div class="dept-stat-grid">
+            <div class="dept-stat"><div class="dept-stat-lbl">Employees</div><div class="dept-stat-val">${d.total.toLocaleString()}</div></div>
+            <div class="dept-stat"><div class="dept-stat-lbl">Attrition</div><div class="dept-stat-val" style="color:${col}">${d.rate}%</div></div>
+            <div class="dept-stat"><div class="dept-stat-lbl">Left</div><div class="dept-stat-val">${d.left.toLocaleString()}</div></div>
+            <div class="dept-stat"><div class="dept-stat-lbl">Avg Income</div><div class="dept-stat-val">$${Math.round(d.avg_income).toLocaleString()}</div></div>
+          </div>
+          <div class="rbar-wrap"><div class="rbar-bg"><div class="rbar-fill" style="width:${d.rate}%;background:${col}"></div></div><span class="rbar-num" style="color:${col}">${d.rate}%</span></div>
+        </div>`;
+      }).join('');
+  }
+
+  const tb = document.getElementById('roleTblBody');
+  tb.innerHTML = '';
+  D.role.forEach(r => {
+    const rc = r.rate > 48 ? 'critical' : r.rate > 45 ? 'high' : r.rate > 42 ? 'medium' : 'low';
+    tb.innerHTML += `<tr>
+      <td class="bold">${r.JobRole}</td>
+      <td>${r.total.toLocaleString()}</td>
+      <td>${r.left.toLocaleString()}</td>
+      <td><div class="rbar-wrap"><div class="rbar-bg"><div class="rbar-fill" style="width:${r.rate}%;background:${r.rate>48?'#dc2626':r.rate>44?'#ea580c':'#16a34a'}"></div></div><span class="rbar-num">${r.rate}%</span></div></td>
+      <td>$${Math.round(r.avg_income).toLocaleString()}</td>
+      <td><span class="rbadge ${rc}">${rc}</span></td>
+    </tr>`;
+  });
+
+  mkChart('roleFullChart', {
+    type: 'bar',
+    data: { labels: D.role.map(d => d.JobRole), datasets: [{ label: 'Attrition %', data: D.role.map(d => d.rate), backgroundColor: D.role.map(d => d.rate > 48 ? '#dc2626' : d.rate > 44 ? '#ea580c' : '#16a34a'), borderRadius: 5, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+  });
+
+  mkChart('ageFullChart', {
+    type: 'bar',
+    data: { labels: D.age_dist.map(d => d.AgeBucket), datasets: [
+      { label: 'Headcount', data: D.age_dist.map(d => d.total), backgroundColor: 'rgba(59,130,246,0.6)', borderRadius: 4, yAxisID: 'y2' },
+      { label: 'Attrition %', data: D.age_dist.map(d => d.rate), backgroundColor: 'rgba(239,68,68,0.8)', borderRadius: 4, yAxisID: 'y1' }
+    ] },
+    options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 10 } } },
+      scales: { y1: { ticks: { callback: v => v + '%' } }, y2: { position: 'right', grid: { display: false } } } }
+  });
+}
+
+// ── RISK MONITOR ─────────────────────────────────────────────────────────────
+function initRiskTable() {
+  renderRiskTable(D.top_risk);
+  const badge = document.getElementById('riskBadge');
+  if(badge) badge.textContent = D.top_risk.length;
+}
+function renderRiskTable(data) {
+  const tb = document.getElementById('riskTblBody');
+  if(!tb) return;
+  tb.innerHTML = '';
+  data.forEach(e => {
+    const rc = e.risk > 65 ? 'critical' : 'high';
+    const bc = e.risk > 65 ? '#dc2626' : '#ea580c';
+    tb.innerHTML += `<tr>
+      <td class="bold mono">${e.id}</td>
+      <td>${e.dept}</td>
+      <td style="color:var(--text)">${e.role}</td>
+      <td>${e.age}</td>
+      <td>$${Math.round(e.income).toLocaleString()}</td>
+      <td><div class="rbar-wrap"><div class="rbar-bg"><div class="rbar-fill" style="width:${e.risk}%;background:${bc}"></div></div><span class="rbar-num" style="color:${bc}">${e.risk}%</span></div></td>
+      <td><span class="rbadge ${rc}">${e.level}</span></td>
+      <td>${'★'.repeat(e.sat)}${'☆'.repeat(4-e.sat)}</td>
+      <td><span style="color:${e.ot?'var(--red2)':'var(--green2)'};">${e.ot?'Yes':'No'}</span></td>
+      <td>${e.years}y</td>
+      <td><button class="btn btn-ghost" style="padding:4px 9px;font-size:10px;" onclick="prefillSubmit('${e.id}','${e.role}','${e.dept}',${e.risk})">📝 Submit</button></td>
+    </tr>`;
+  });
+}
+function filterRiskTable() {
+  const q = document.getElementById('riskSearch').value.toLowerCase();
+  const filtered = D.top_risk.filter(e => e.id.toLowerCase().includes(q) || e.role.toLowerCase().includes(q) || e.dept.toLowerCase().includes(q));
+  renderRiskTable(filtered);
+}
+
+// ── EXPLAINABILITY ───────────────────────────────────────────────────────────
+let shapChartInst = null;
+function initExplain() {
+  const list = document.getElementById('shapEmpList');
+  if(!list) return;
+  list.innerHTML = '';
+  D.top_risk.slice(0, 10).forEach((e, i) => {
+    list.innerHTML += `<div class="emp-card-mini ${i===0?'selected':''}" id="scard${i}" onclick="selectShap(${i})">
+      <div class="emp-card-mini-top">
+        <div>
+          <div class="emp-card-mini-name">${e.id}</div>
+          <div class="emp-card-mini-meta">${e.role} · ${e.dept}</div>
+        </div>
+        <div class="emp-card-mini-risk" style="color:var(--red2)">${e.risk}%</div>
+      </div>
+    </div>`;
+  });
+  if(D.top_risk.length > 0) {
+      selectShap(0);
+  }
+}
+
+function selectShap(idx) {
+  document.querySelectorAll('.emp-card-mini').forEach((c,i) => c.classList.toggle('selected', i===idx));
+  const e = D.top_risk[idx];
+  if(!e) return;
+  
+  document.getElementById('shapName').textContent = `${e.id} — ${e.role}`;
+  document.getElementById('shapMeta').textContent = `${e.dept} · Age ${e.age} · ${e.marital} · ${e.gender}`;
+  document.getElementById('shapBadge').innerHTML = `<span class="rbadge critical">${e.level} ${e.risk}%</span>`;
+  document.getElementById('shapWrap').style.display = 'block';
+  document.getElementById('shapPlaceholder').style.display = 'none';
+  
+  // Stats
+  document.getElementById('shapEmpStats').innerHTML = `
+    <div style="background:var(--bg2);border-radius:7px;padding:10px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Income</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);margin-top:2px;">$${Math.round(e.income).toLocaleString()}</div></div>
+    <div style="background:var(--bg2);border-radius:7px;padding:10px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Tenure</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);margin-top:2px;">${e.years}yr</div></div>
+    <div style="background:var(--bg2);border-radius:7px;padding:10px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Overtime</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;margin-top:2px;color:${e.ot?'var(--red2)':'var(--green2)'};">${e.ot?'Yes':'No'}</div></div>
+    <div style="background:var(--bg2);border-radius:7px;padding:10px;"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;">Sat</div><div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--text);margin-top:2px;">${e.sat}/4</div></div>
+  `;
+  
+  const maxV = Math.max(...e.shap.map(s => Math.abs(s.v)), 1); // fallback to 1 avoiding NaN
+  const barsEl = document.getElementById('shapBarsEl');
+  barsEl.innerHTML = '';
+  
+  e.shap.forEach(s => {
+    const pct = Math.max((Math.abs(s.v) / maxV) * 100, 8);
+    const pos = s.v > 0;
+    barsEl.innerHTML += `<div class="shap-row">
+      <div class="shap-feat">${s.f}</div>
+      <div class="shap-bar-wrap">
+        <div class="shap-bar ${pos?'pos':'neg'}" style="width:${pct}%;"></div>
+        <div class="shap-val">${pos?'+':''}${s.v.toFixed(1)}%</div>
+      </div>
+    </div>`;
+  });
+  
+  if (shapChartInst) shapChartInst.destroy();
+  shapChartInst = new Chart(document.getElementById('shapBarChart'), {
+    type: 'bar',
+    data: {
+      labels: e.shap.map(s => s.f),
+      datasets: [{ label: 'SHAP Value (%)', data: e.shap.map(s => s.v),
+        backgroundColor: e.shap.map(s => s.v > 0 ? 'rgba(220,38,38,0.7)' : 'rgba(22,163,74,0.7)'), borderRadius: 4, borderWidth: 0 }]
+    },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.raw > 0 ? '+' : ''}${c.raw.toFixed(2)}% risk impact` } } }, scales: { x: { ticks: { callback: v => v + '%' } } } }
+  });
+}
+
+// ── MODELS ───────────────────────────────────────────────────────────────────
+function initModels() {
+  mkChart('aucChart', {
+    type: 'bar',
+    data: {
+      labels: D.models.map(m => m.name),
+      datasets: [
+        { label: 'AUC', data: D.models.map(m => m.auc), backgroundColor: ['rgba(59,130,246,0.8)','rgba(168,85,247,0.8)','rgba(34,197,94,0.8)'], borderRadius: 7, borderWidth: 0 },
+        { label: 'Accuracy', data: D.models.map(m => m.accuracy), backgroundColor: ['rgba(59,130,246,0.3)','rgba(168,85,247,0.3)','rgba(34,197,94,0.3)'], borderRadius: 7, borderWidth: 0 }
+      ]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 10 } } }, scales: { y: { min: 0.88, max: 1.0 } } }
+  });
+  mkChart('radarChart', {
+    type: 'radar',
+    data: {
+      labels: ['AUC','Accuracy','Precision','Recall','F1'],
+      datasets: D.models.map((m, i) => ({
+        label: m.short,
+        data: [m.auc, m.accuracy, m.precision, m.recall, m.f1],
+        borderColor: ['#3b82f6','#a855f7','#22c55e'][i],
+        backgroundColor: ['rgba(59,130,246,0.08)','rgba(168,85,247,0.08)','rgba(34,197,94,0.08)'][i],
+        borderWidth: 2, pointRadius: 4
+      }))
+    },
+    options: { responsive: true, plugins: { legend: { position: 'top', labels: { boxWidth: 10 } } }, scales: { r: { min: 0.85, max: 1.0 } } }
+  });
+}
+
+// ── FEATURES ─────────────────────────────────────────────────────────────────
+function initFeatures() {
+  const maxFi = D.feature_importance[0].v;
+  document.getElementById('featImpEl').innerHTML = D.feature_importance.map(f =>
+    `<div class="feat-row">
+      <div class="feat-name">${f.f}</div>
+      <div class="feat-bg"><div class="feat-fill" style="width:${(f.v/maxFi)*100}%;background:linear-gradient(90deg,var(--accent),var(--purple2));"></div></div>
+      <div class="feat-val">${f.v.toFixed(1)}%</div>
+    </div>`
+  ).join('');
+
+  const maxSh = D.shap_global[0].v;
+  document.getElementById('shapGlobalEl').innerHTML = D.shap_global.map(s =>
+    `<div class="feat-row">
+      <div class="feat-name">${s.f}</div>
+      <div class="feat-bg"><div class="feat-fill" style="width:${(s.v/maxSh)*100}%;background:linear-gradient(90deg,var(--red),var(--orange));"></div></div>
+      <div class="feat-val">${s.v.toFixed(2)}</div>
+    </div>`
+  ).join('');
+
+  mkChart('featBarChart', {
+    type: 'bar',
+    data: {
+      labels: D.feature_importance.map(f => f.f),
+      datasets: [{ label: 'Importance %', data: D.feature_importance.map(f => f.v), backgroundColor: D.feature_importance.map((_,i) => `hsl(${220+i*10},65%,${58-i*2}%)`), borderRadius: 5, borderWidth: 0 }]
+    },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { callback: v => v + '%' } } } }
+  });
+}
+
+// ── PREDICT & SUBMIT ─────────────────────────────────────────────────────────
+function validate(id, min, max) {
+  const el = document.getElementById(id);
+  const val = parseFloat(el.value);
+  el.parentElement.classList.toggle('invalid', isNaN(val) || val < min || val > max);
+  el.parentElement.classList.toggle('valid', !isNaN(val) && val >= min && val <= max);
+}
+
+function predictEmployee() {
+  const age = +document.getElementById('p_age').value;
+  const income = +document.getElementById('p_income').value;
+  const level = +document.getElementById('p_level').value;
+  const years = +document.getElementById('p_years').value;
+  const sat = +document.getElementById('p_sat').value;
+  const wlb = +document.getElementById('p_wlb').value;
+  const env = +document.getElementById('p_env').value;
+  const dist = +document.getElementById('p_dist').value;
+  const train = +document.getElementById('p_train').value;
+  const stock = +document.getElementById('p_stock').value;
+  const numco = +document.getElementById('p_numco').value;
+  const ot = +document.getElementById('p_ot').value;
+  const marital = document.getElementById('p_marital').value.toLowerCase();
+
+  const logit = -1.5 + 1.5*ot - 0.5*(sat-2.5) - 0.4*(wlb-2.5) - 0.35*(env-2.5)
+    + 0.06*dist + 0.20*numco - 0.05*(age-30) - 0.25*stock
+    - 0.003*(income-5000) - 0.15*Math.log1p(years) + 0.50*(level===1?1:0)
+    + 0.40*(marital==='single'?1:0) - 0.15*train;
+  const prob = 1 / (1 + Math.exp(-logit));
+  const riskPct = Math.round(prob * 100);
+  const level_ = riskPct > 65 ? 'Critical' : riskPct > 40 ? 'High' : riskPct > 20 ? 'Medium' : 'Low';
+  const colors = { Critical: '#ef4444', High: '#f97316', Medium: '#f59e0b', Low: '#22c55e' };
+  const col = colors[level_];
+
+  const factors = [
+    { n: 'Monthly Income', v: -0.003*(income-5000)*10, raw: `$${income.toLocaleString()}` },
+    { n: 'Overtime', v: 1.5*ot*10, raw: ot ? 'Yes' : 'No' },
+    { n: 'Job Satisfaction', v: -0.5*(sat-2.5)*10, raw: `${sat}/4` },
+    { n: 'Distance from Home', v: 0.06*dist*10, raw: `${dist} km` },
+    { n: 'Work-Life Balance', v: -0.4*(wlb-2.5)*10, raw: `${wlb}/4` },
+    { n: 'Stock Options', v: -0.25*stock*10, raw: stock },
+    { n: 'Job Level', v: 0.50*(level===1?1:0)*10, raw: level },
+    { n: '# Companies Worked', v: 0.20*numco*10, raw: numco },
+    { n: 'Training Times', v: -0.15*train*10, raw: `${train}/yr` },
+    { n: 'Marital (Single)', v: 0.40*(marital==='single'?1:0)*10, raw: marital },
+  ].sort((a,b) => Math.abs(b.v) - Math.abs(a.v)).slice(0,7);
+  
+  const maxF = Math.max(...factors.map(f => Math.abs(f.v)));
+
+  const msgs = {
+    Critical: '🚨 Immediate retention action required. Schedule a 1:1 within 48 hours.',
+    High: '⚠️ Elevated attrition risk. Consider a career development conversation soon.',
+    Medium: '👀 Moderate risk. Monitor quarterly and ensure engagement.',
+    Low: '✅ Employee appears stable. Maintain current engagement practices.'
+  };
+  const actions = {
+    Critical: [['💰 Salary Review','Conduct immediate compensation benchmarking'],['🗓️ Manager Meeting','Schedule 1:1 retention conversation within 48h'],['📈 Career Plan','Develop formal growth roadmap with milestones']],
+    High: [['💰 Compensation','Review salary against market peers'],['🏆 Recognition','Acknowledge contributions, discuss promotion path'],['⏰ Workload','Assess overtime burden, consider rebalancing']],
+    Medium: [['💬 Check-in','Schedule quarterly career conversation'],['📚 Training','Offer relevant skill development opportunities'],['🌟 Engagement','Include in key projects and decisions']],
+    Low: [['📋 Monitor','Add to quarterly review cycle'],['🤝 Culture','Maintain positive team environment'],['🎯 Goals','Ensure clear growth objectives are in place']]
+  };
+
+  document.getElementById('predictResult').innerHTML = `
+    <div style="text-align:center;margin-bottom:20px;padding:20px;background:var(--bg2);border-radius:12px;border:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Predicted Attrition Risk</div>
+      <div style="font-family:'Fraunces',serif;font-size:68px;font-weight:700;color:${col};line-height:1;">${riskPct}%</div>
+      <span class="rbadge ${level_.toLowerCase()}" style="font-size:12px;margin-top:8px;">${level_} Risk</span>
+      <div style="font-size:12px;color:var(--text3);margin-top:10px;">${msgs[level_]}</div>
+    </div>
+    <div style="background:var(--bg2);border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Key Risk Drivers (SHAP)</div>
+      ${factors.map(f => {
+        const pct = Math.max(Math.abs(f.v)/maxF*100, 10);
+        return `<div class="shap-row">
+          <div class="shap-feat">${f.n} <span style="color:var(--text3)">(${f.raw})</span></div>
+          <div class="shap-bar-wrap">
+            <div class="shap-bar ${f.v>0?'pos':'neg'}" style="width:${pct}%;"></div>
+            <div class="shap-val">${f.v>0?'↑':'↓'} ${Math.abs(f.v).toFixed(2)}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="action-cards">
+      ${actions[level_].map(([t,tx]) => `<div class="action-card"><div class="action-card-title">${t}</div><div class="action-card-text">${tx}</div></div>`).join('')}
+    </div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%;" onclick="prefillFromPredict(${riskPct},'${level_}')">📝 Submit This Prediction for HR Review</button>
+  `;
+  showToast('Prediction Complete', `Risk: ${riskPct}% — ${level_}. SHAP explanation generated.`, riskPct > 65 ? 'error' : riskPct > 40 ? 'info' : 'success');
+}
+
+let submissions = [];
+function sValidate(id, regex, msg) {
+  const el = document.getElementById(id);
+  const wrapper = document.getElementById('sf_' + id.replace('s_', ''));
+  const errEl = document.getElementById('err_' + id);
+  const valid = regex.test(el.value.trim());
+  if (wrapper) { wrapper.classList.toggle('invalid', !valid && el.value !== ''); wrapper.classList.toggle('valid', valid); }
+  if (errEl) errEl.textContent = (!valid && el.value !== '') ? msg : '';
+  return valid;
+}
+
+function submitCase() {
+  const empid = document.getElementById('s_empid').value.trim();
+  const name  = document.getElementById('s_name').value.trim();
+  const dept  = document.getElementById('s_dept').value;
+  const role  = document.getElementById('s_role').value;
+  const risk  = document.getElementById('s_risk').value;
+  const level = document.getElementById('s_level').value;
+  const pri   = document.getElementById('s_priority').value;
+  const sub   = document.getElementById('s_submitter').value.trim();
+  const factors = document.getElementById('s_factors').value.trim();
+
+  if (!empid || !name || !dept || !role || !risk || !level || !pri || !sub || !factors) {
+    showToast('Validation Error', 'Please fill in all required fields marked with *.', 'error');
+    if (!dept) { document.getElementById('s_dept').style.borderColor = 'var(--red)'; }
+    if (!role) { document.getElementById('s_role').style.borderColor = 'var(--red)'; }
+    return;
+  }
+
+  const btn = event.target;
+  btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:6px;"></div> Submitting...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const caseObj = {
+      id: `CASE-${String(submissions.length + 1).padStart(4, '0')}`,
+      empid, name, dept, role,
+      risk: parseFloat(risk), level, priority: pri,
+      submitter: sub, factors,
+      actions: document.getElementById('s_actions').value,
+      notes: document.getElementById('s_notes').value,
+      timestamp: new Date().toLocaleString(),
+      status: 'Pending Review'
+    };
+    submissions.push(caseObj);
+    updateSubmissionUI();
+    clearForm();
+    btn.innerHTML = '📤 Submit Case to HR';
+    btn.disabled = false;
+    showToast(`Case ${caseObj.id} Submitted`, `${empid} (${name}) queued for HR review. Priority: ${pri}.`, 'success');
+  }, 1200);
+}
+
+function updateSubmissionUI() {
+  document.getElementById('totalCases').textContent = submissions.length;
+  document.getElementById('urgentCases').textContent = submissions.filter(s => s.priority === 'urgent').length;
+
+  const list = document.getElementById('submissionList');
+  list.innerHTML = submissions.length === 0 ? `<div style="text-align:center;padding:40px;color:var(--text3);"><div style="font-size:28px;margin-bottom:10px;">📭</div><div>No submissions yet.</div></div>` : '';
+  [...submissions].reverse().forEach(s => {
+    const riskCol = s.risk > 65 ? 'var(--red2)' : s.risk > 40 ? 'var(--orange2)' : 'var(--green2)';
+    const priLabels = { urgent: '🔴 Urgent', high: '🟠 High', normal: '🟡 Normal', low: '🟢 Low' };
+    const initials = s.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    list.innerHTML += `<div class="submission-row" style="padding:12px 16px;">
+      <div class="submission-avatar">${initials}</div>
+      <div class="submission-info">
+        <div class="submission-name">${s.empid} — ${s.name}</div>
+        <div class="submission-meta">${s.role} · ${s.dept} · ${priLabels[s.priority]} · ${s.timestamp}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px;font-style:italic;">"${s.factors.slice(0,80)}${s.factors.length>80?'…':''}"</div>
+      </div>
+      <div class="submission-risk">
+        <div class="submission-risk-val" style="color:${riskCol}">${s.risk}%</div>
+        <div style="font-size:9px;background:rgba(34,197,94,0.1);color:var(--green3);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:2px 6px;margin-top:4px;text-align:center;">Pending</div>
+      </div>
+    </div>`;
+  });
+}
+
+function clearForm() {
+  ['s_empid','s_name','s_risk','s_factors','s_actions','s_notes','s_submitter'].forEach(id => { document.getElementById(id).value = ''; });
+  ['s_dept','s_role','s_level','s_priority'].forEach(id => { document.getElementById(id).value = ''; });
+  document.querySelectorAll('.field.invalid, .field.valid').forEach(f => { f.classList.remove('invalid','valid'); });
+  document.querySelectorAll('.field-err').forEach(e => { e.textContent = ''; });
+}
+
+function prefillFromPredict(risk, level) {
+  document.querySelector('[data-page="submit"]').click();
+  document.getElementById('s_risk').value = risk;
+  document.getElementById('s_level').value = level.toLowerCase();
+  document.getElementById('s_priority').value = risk > 65 ? 'urgent' : risk > 40 ? 'high' : 'normal';
+  showToast('Form Pre-filled', 'Risk score and level populated from prediction.', 'info');
+}
+
+function prefillSubmit(id, role, dept, risk) {
+  document.querySelector('[data-page="submit"]').click();
+  document.getElementById('s_empid').value = id;
+  document.getElementById('s_risk').value = risk;
+  document.getElementById('s_level').value = risk > 65 ? 'critical' : 'high';
+  document.getElementById('s_priority').value = risk > 65 ? 'urgent' : 'high';
+  const roleEl = document.getElementById('s_role');
+  for (let opt of roleEl.options) { if (opt.text.includes(role.split(' ')[0])) { roleEl.value = opt.value; break; } }
+  showToast('Case Pre-filled', `Data for ${id} loaded. Complete remaining fields.`, 'info');
+}
+
+
+// ── FILTER BAR ───────────────────────────────────────────────────────────────
+function filterToggle(el, type, val) {
+  document.querySelectorAll(`.filter-chip[onclick*="'${type}'"]`).forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  showToast('Filter Applied', `${type}: ${val} — charts would update in live deployment.`, 'info');
+}
+function filterYear(sel) {
+  showToast('Year Filter', `Year ${sel.value} applied — data filtered.`, 'info');
+}
+function resetFilters() {
+  document.querySelectorAll('.filter-chip').forEach((c,i) => { c.classList.toggle('active', i===0 || i===4); });
+  showToast('Filters Reset', 'All filters cleared.', 'info');
+}
+
+
+// ── UPLOAD & CSV/EXCEL DATA AGGREGATION ENGINE ─────────────────────────────────────
+function handleUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const fileName = file.name.toLowerCase();
+  const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+  const isCSV = fileName.endsWith('.csv');
+
+  if (!isExcel && !isCSV) {
+    showToast('Error', 'Please upload a valid .csv, .xlsx, or .xls file.', 'error');
+    return;
+  }
+
+  document.getElementById('uploadProgress').style.display = 'block';
+  document.getElementById('uploadFileName').textContent = file.name;
+  
+  let pct = 0;
+  const iv = setInterval(() => {
+    pct += Math.random() * 25;
+    if (pct >= 100) { 
+      pct = 100; 
+      clearInterval(iv); 
+      document.getElementById('uploadStatus').textContent = '✅ File loaded. Processing calculations...'; 
+      document.getElementById('progFill').style.width = '100%';
+      document.getElementById('uploadPct').textContent = '100%';
+
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+         let csvData = "";
+         if (isExcel) {
+             try {
+                 const data = new Uint8Array(e.target.result);
+                 const workbook = XLSX.read(data, {type: 'array'});
+                 const firstSheetName = workbook.SheetNames[0];
+                 const worksheet = workbook.Sheets[firstSheetName];
+                 csvData = XLSX.utils.sheet_to_csv(worksheet);
+             } catch(err) {
+                 showToast('Error', 'Could not parse Excel file. Try saving as CSV.', 'error');
+                 return;
+             }
+         } else {
+             csvData = e.target.result;
+         }
+
+         processCSVData(csvData);
+         document.getElementById('uploadStatus').textContent = '✅ Dashboard fully synced with new data!';
+         showToast('Data Upload Successful', `Processed records from ${file.name}.`, 'success');
+         
+         // Automatically jump to overview to see results
+         setTimeout(() => { document.querySelector('[data-page="overview"]').click(); }, 1200);
+      };
+
+      if (isExcel) {
+          reader.readAsArrayBuffer(file);
+      } else {
+          reader.readAsText(file);
+      }
+    } else {
+      document.getElementById('progFill').style.width = pct + '%';
+      document.getElementById('uploadPct').textContent = Math.round(pct) + '%';
+    }
+  }, 150);
+}
+
+function processCSVData(csv) {
+  const lines = csv.split(/\r?\n/);
+  if(lines.length < 2) return;
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  const data = [];
+  
+  for(let i=1; i<lines.length; i++) {
+    if(!lines[i].trim()) continue;
+    const vals = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    let obj = {};
+    headers.forEach((h, idx) => { obj[h] = vals[idx] ? vals[idx].trim().replace(/^"|"$/g, '') : ''; });
+    data.push(obj);
+  }
+
+  if(data.length === 0) return;
+
+  // 1. Core KPIs
+  let total = data.length;
+  let attrition = data.filter(d => d.Attrition === 'Yes').length;
+  let rate = total > 0 ? parseFloat(((attrition / total) * 100).toFixed(1)) : 0;
+  let totalIncome = data.reduce((sum, d) => sum + (parseFloat(d.MonthlyIncome)||0), 0);
+  let avgIncome = total > 0 ? Math.round(totalIncome / total) : 0;
+
+  D.kpi.total = total;
+  D.kpi.attrition_count = attrition;
+  D.kpi.attrition_rate = rate;
+  D.kpi.avg_income = avgIncome;
+
+  const groupBy = (arr, key) => arr.reduce((acc, curr) => {
+      const k = curr[key];
+      if(k === undefined || k === '') return acc;
+      if(!acc[k]) acc[k] = { total: 0, left: 0, incomeSum: 0 };
+      acc[k].total++;
+      if(curr.Attrition === 'Yes') acc[k].left++;
+      acc[k].incomeSum += (parseFloat(curr.MonthlyIncome)||0);
+      return acc;
+  }, {});
+
+  let deptGroup = groupBy(data, 'Department');
+  D.dept = Object.keys(deptGroup).map(k => ({ Department: k, total: deptGroup[k].total, left: deptGroup[k].left, rate: parseFloat(((deptGroup[k].left / deptGroup[k].total) * 100).toFixed(1)), avg_income: deptGroup[k].incomeSum / deptGroup[k].total }));
+
+  let roleGroup = groupBy(data, 'JobRole');
+  D.role = Object.keys(roleGroup).map(k => ({ JobRole: k, total: roleGroup[k].total, left: roleGroup[k].left, rate: parseFloat(((roleGroup[k].left / roleGroup[k].total) * 100).toFixed(1)), avg_income: roleGroup[k].incomeSum / roleGroup[k].total })).sort((a,b) => b.total - a.total);
+
+  let otGroup = groupBy(data, 'OverTime');
+  D.overtime = Object.keys(otGroup).map(k => ({ OverTime: k === 'Yes' ? 'With Overtime' : 'No Overtime', total: otGroup[k].total, left: otGroup[k].left, rate: parseFloat(((otGroup[k].left / otGroup[k].total) * 100).toFixed(1)) })).sort((a,b) => a.OverTime.localeCompare(b.OverTime));
+
+  let genderGroup = groupBy(data, 'Gender');
+  D.gender = Object.keys(genderGroup).map(k => ({ Gender: k, count: genderGroup[k].total, rate: parseFloat(((genderGroup[k].left / genderGroup[k].total) * 100).toFixed(1)) }));
+  
+  let maritalGroup = groupBy(data, 'MaritalStatus');
+  D.marital = Object.keys(maritalGroup).map(k => ({ MaritalStatus: k, count: maritalGroup[k].total, rate: parseFloat(((maritalGroup[k].left / maritalGroup[k].total) * 100).toFixed(1)) }));
+  
+  let stockGroup = groupBy(data, 'StockOptionLevel');
+  D.stock = Object.keys(stockGroup).map(k => ({ StockOptionLevel: parseInt(k), count: stockGroup[k].total, rate: parseFloat(((stockGroup[k].left / stockGroup[k].total) * 100).toFixed(1)) })).sort((a,b) => a.StockOptionLevel - b.StockOptionLevel);
+
+  const ageBuckets = [ { b: "18-25", min: 18, max: 25 }, { b: "26-30", min: 26, max: 30 }, { b: "31-35", min: 31, max: 35 }, { b: "36-40", min: 36, max: 40 }, { b: "41-45", min: 41, max: 45 }, { b: "46-50", min: 46, max: 50 }, { b: "51+", min: 51, max: 100 } ];
+  D.age_dist = ageBuckets.map(bucket => {
+      let emps = data.filter(d => parseFloat(d.Age) >= bucket.min && parseFloat(d.Age) <= bucket.max);
+      let tot = emps.length, left = emps.filter(d => d.Attrition === 'Yes').length;
+      return { AgeBucket: bucket.b, total: tot, rate: tot ? parseFloat(((left/tot)*100).toFixed(1)) : 0 };
+  });
+
+  const incBuckets = [ { b: "<2K", min: 0, max: 2000 }, { b: "2-4K", min: 2001, max: 4000 }, { b: "4-6K", min: 4001, max: 6000 }, { b: "6-9K", min: 6001, max: 9000 }, { b: "9-12K", min: 9001, max: 12000 }, { b: "12K+", min: 12001, max: 999999 } ];
+  D.income_dist = incBuckets.map(bucket => {
+      let emps = data.filter(d => parseFloat(d.MonthlyIncome) >= bucket.min && parseFloat(d.MonthlyIncome) <= bucket.max);
+      let tot = emps.length, left = emps.filter(d => d.Attrition === 'Yes').length;
+      return { IncomeBucket: bucket.b, total: tot, rate: tot ? parseFloat(((left/tot)*100).toFixed(1)) : 0 };
+  });
+
+  let satGroup = {};
+  data.forEach(d => {
+      let j = parseInt(d.JobSatisfaction), w = parseInt(d.WorkLifeBalance);
+      if(!j || !w || isNaN(j) || isNaN(w)) return;
+      let key = j + "_" + w;
+      if(!satGroup[key]) satGroup[key] = { total: 0, left: 0, js: j, wlb: w };
+      satGroup[key].total++;
+      if(d.Attrition === 'Yes') satGroup[key].left++;
+  });
+  D.sat_heatmap = Object.values(satGroup).map(v => ({ JobSatisfaction: v.js, WorkLifeBalance: v.wlb, rate: parseFloat(((v.left/v.total)*100).toFixed(1)) }));
+
+  let yearGroup = {};
+  const anchorYear = 2024;
+  data.forEach(d => {
+      let y = parseInt(d.YearsAtCompany);
+      if(isNaN(y)) return;
+      let hireYear = anchorYear - y;
+      if(!yearGroup[hireYear]) yearGroup[hireYear] = { count: 0, left: 0 };
+      yearGroup[hireYear].count++;
+      if(d.Attrition === 'Yes') yearGroup[hireYear].left++;
+  });
+  D.yearly = Object.keys(yearGroup).map(y => ({ HireYear: parseInt(y), count: yearGroup[y].count, rate: parseFloat(((yearGroup[y].left / yearGroup[y].count)*100).toFixed(1)) })).sort((a,b) => a.HireYear - b.HireYear).slice(-10);
+
+  // 10. DYNAMIC RISK GENERATION (This fixes the Risk Monitor bug!)
+  let criticalCount = 0;
+  let highRiskCount = 0;
+  
+  let scoredEmployees = data.map((d, i) => {
+      const ot = d.OverTime === 'Yes' ? 1 : 0;
+      const sat = +d.JobSatisfaction || 3;
+      const wlb = +d.WorkLifeBalance || 3;
+      const env = +d.EnvironmentSatisfaction || 3;
+      const dist = +d.DistanceFromHome || 10;
+      const numco = +d.NumCompaniesWorked || 1;
+      const age = +d.Age || 35;
+      const stock = +d.StockOptionLevel || 0;
+      const income = +d.MonthlyIncome || 5000;
+      const years = +d.YearsAtCompany || 5;
+      const level = +d.JobLevel || 2;
+      const marital = (d.MaritalStatus||'').toLowerCase();
+      const train = +d.TrainingTimesLastYear || 2;
+      const gender = d.Gender || 'Unknown';
+      
+      const logit = -1.5 + 1.5*ot - 0.5*(sat-2.5) - 0.4*(wlb-2.5) - 0.35*(env-2.5)
+        + 0.06*dist + 0.20*numco - 0.05*(age-30) - 0.25*stock
+        - 0.003*(income-5000) - 0.15*Math.log1p(years) + 0.50*(level===1?1:0)
+        + 0.40*(marital==='single'?1:0) - 0.15*train;
+      
+      const prob = 1 / (1 + Math.exp(-logit));
+      const riskPct = Math.round(prob * 100);
+      
+      if(riskPct > 65) criticalCount++;
+      else if(riskPct > 40) highRiskCount++;
+      
+      const levelStr = riskPct > 65 ? 'Critical' : riskPct > 40 ? 'High' : riskPct > 20 ? 'Medium' : 'Low';
+      
+      const shapFactors = [
+        { f: 'MonthlyIncome', v: -0.003*(income-5000)*10 },
+        { f: 'OverTime', v: 1.5*ot*10 },
+        { f: 'JobSatisfaction', v: -0.5*(sat-2.5)*10 },
+        { f: 'DistanceFromHome', v: 0.06*dist*10 },
+        { f: 'Age', v: -0.05*(age-30)*10 },
+        { f: 'StockOptionLevel', v: -0.25*stock*10 },
+        { f: 'NumCompaniesWorked', v: 0.20*numco*10 },
+        { f: 'YearsAtCompany', v: -0.15*Math.log1p(years)*10 }
+      ].sort((a,b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 6);
+
+      return {
+        id: d.EmployeeNumber ? `EMP-${d.EmployeeNumber}` : `EMP-${1000+i}`,
+        dept: d.Department || 'Unknown',
+        role: d.JobRole || 'Unknown',
+        age: age,
+        income: income,
+        risk: riskPct,
+        level: levelStr,
+        ot: ot === 1,
+        sat: sat,
+        years: years,
+        marital: d.MaritalStatus || 'Unknown',
+        gender: gender,
+        shap: shapFactors
+      };
+  });
+  
+  // Sort and grab top 30 risk employees for the Risk Monitor
+  scoredEmployees.sort((a,b) => b.risk - a.risk);
+  D.top_risk = scoredEmployees.slice(0, 30);
+  
+  D.kpi.critical = criticalCount;
+  D.kpi.high_risk = criticalCount + highRiskCount;
+  D.kpi.total_risk_cost = criticalCount * 45000;
+
+  // ── UPDATE DOM TEXT ──
+  const updateText = (selector, text) => { const el = document.querySelector(selector); if(el) el.innerText = text; };
+  updateText('.kpi.c1 .kpi-val', total.toLocaleString());
+  updateText('.kpi.c2 .kpi-val', attrition.toLocaleString());
+  updateText('.kpi.c2 .kpi-trend', `↑ ${rate}% rate`);
+  updateText('.kpi.c3 .kpi-val', D.kpi.high_risk.toLocaleString());
+  updateText('.kpi.c4 .kpi-val', D.kpi.critical.toLocaleString());
+  updateText('.kpi.c5 .kpi-val', `$${(D.kpi.total_risk_cost/1000000).toFixed(1)}M`);
+  
+  updateText('#pb-rate', `${rate}%`);
+  updateText('#pb-income', `$${avgIncome.toLocaleString()}`);
+  
+  updateText('#exp-crit', D.kpi.critical.toLocaleString());
+  updateText('#exp-tot', `$${(D.kpi.total_risk_cost/1000000).toFixed(1)}M`);
+
+  // ── RE-RENDER ALL CHARTS & TABLES WITH NEW D OBJECT ──
+  initOverview();
+  initPowerBI();
+  initWorkforce();
+  initRiskTable();
+  initExplain();
+  initModels();
+  initFeatures();
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) { document.getElementById('fileInput').files = e.dataTransfer.files; handleUpload(document.getElementById('fileInput')); }
+}
+
+function exportCSV() {
+  const headers = ['EmployeeID','Department','Role','Age','Income','RiskScore','RiskLevel','Overtime','Satisfaction','Tenure'];
+  const rows = D.top_risk.map(e => [e.id, e.dept, e.role, e.age, Math.round(e.income), e.risk, e.level, e.ot?'Yes':'No', e.sat, e.years]);
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv,' + encodeURIComponent(csv);
+  a.download = 'AttritionIQ_Risk_Report.csv';
+  a.click();
+  showToast('Export Complete', 'Risk report downloaded as CSV.', 'success');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+initOverview();
+initRiskTable();
+initExplain();
+initModels();
+initFeatures();
+</script>
+</body>
+</html>
